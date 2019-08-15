@@ -1,0 +1,145 @@
+package K_NN;
+
+import java.io.FileInputStream;
+import java.util.Scanner;
+
+public class k_NN {
+    public static void main(String args[]) throws Exception {
+        double[][] trainset = new double[300][61];//训练集
+        double[][] distance = new double[300][2];//测试数据与每个训练集的距离
+        double[] test = new double[60];//测试数据
+        int cm;//计算方法：1：ED、2：DTW
+        int k;//最近邻参数
+        int finallabel;//所属类别
+        trainset = getData("F:\\浏览器下载位置\\UCRArchive_2018\\SyntheticControl\\SyntheticControl_TRAIN.tsv");
+        System.out.println("请输入一个长度为60的测试数据：");
+        Scanner settest = new Scanner(System.in);
+        for (int i = 1; i < test.length; i++) {//输入测试数据，存储到一个数组中
+            test[i] = settest.nextDouble();
+        }
+        System.out.println("请选择计算方法：1：ED、2：DTW");
+        Scanner setcm = new Scanner(System.in);
+        cm = setcm.nextInt();
+        switch(cm){
+            case 1:
+                distance = getED(trainset, test);
+                break;
+            case 2:
+                distance = getDTW(trainset, test);
+                break;
+        }
+        distance = sortDistance(distance);
+        System.out.println("请输入参数k的值：");
+        Scanner setk = new Scanner(System.in);//输入参数k
+        k = setk.nextInt();
+        finallabel = selectClass(distance,k);
+        System.out.println("测试数据的类别为：");
+        System.out.println(finallabel);
+    }
+
+    //获得训练数据集
+    public static double[][] getData(String fileName) throws Exception {
+        FileInputStream inputStream = null;
+        Scanner sc = null;
+        inputStream = new FileInputStream(fileName);
+        sc = new Scanner(inputStream);
+        double[][] distance = new double[300][2];
+        double[][] data = new double[300][61];
+        String[] Data = new String[61];
+        int row = 0;
+        while (sc.hasNextLine()) {
+            Data = sc.nextLine().split("[\\s]");
+            for (int i = 0; i < Data.length; i++) {
+                data[row][i] = Double.parseDouble(Data[i]);
+            }
+            row++;
+        }
+        return data;
+    }
+
+    //获得测试数据与训练数据集的欧几里得距离
+    public static double[][] getED(double ts[][], double test[]) throws Exception {
+        double[][] d = new double[300][2];
+        for (int i = 0; i < ts.length; i++) {
+            d[i][0] = ts[i][0];
+            for (int j = 0; j < test.length; j++) {
+                d[i][1] += Math.pow((ts[i][j + 1] - test[j]), 2);
+            }
+        }
+        return d;
+    }
+
+    //获得测试数据与训练数据集的DTW距离
+    public static double[][] getDTW(double ts[][], double test[]) throws Exception {
+        double[][] d = new double[300][2];
+        for (int i = 0; i < ts.length; i++) {
+            d[i][0] = ts[i][0];
+            for (int j = 1; j < test.length; j++) {
+                d[i][1] += Math.pow(Min(ts[i][j]-test[j-1],ts[i][j]-test[j],ts[i][j+1]-test[j-1]), 2);
+            }
+        }
+        return d;
+    }
+
+    //计算最小值
+    public static double Min(double x,double y,double z){
+        double minvalue = x;
+        if(y<minvalue){
+            minvalue = y;
+        }
+        if(z<minvalue){
+            minvalue = z;
+        }
+        return minvalue;
+    }
+
+    //对得到的距离度量进行从小到大排序
+    public static double[][] sortDistance(double distance[][]) throws Exception {
+        double[][] d = new double[300][2];
+        for(int i=0;i<distance.length-1;i++){
+            for(int j=0;j<distance.length-1-i;j++){
+                if(distance[j][1]>distance[j+1][1]){
+                    double[] temp = new double[2];
+                    temp[0] = distance[j][0];
+                    temp[1] = distance[j][1];
+                    distance[j][0] = distance[j+1][0];
+                    distance[j][1] = distance[j+1][1];
+                    distance[j+1][0] = temp[0];
+                    distance[j+1][1] = temp[1];
+                }
+            }
+        }
+        return distance;
+    }
+
+    //选择前k个训练集合中，出现次数最多的类别
+    public static int selectClass(double distance[][],int k){
+        int[] label = new int[6];
+        int maxlabel,finallabel;
+        for(int i=0;i<k;i++){
+            switch ((int)distance[i][0]){
+                case 1:
+                    label[0]++;break;
+                case 2:
+                    label[1]++;break;
+                case 3:
+                    label[2]++;break;
+                case 4:
+                    label[3]++;break;
+                case 5:
+                    label[4]++;break;
+                case 6:
+                    label[5]++;break;
+            }
+        }
+        maxlabel = label[0];
+        finallabel = 1;
+        for(int i=1;i<6;i++){
+            if(label[i]>maxlabel){
+                maxlabel = label[i];
+                finallabel = i+1;
+            }
+        }
+        return finallabel;
+    }
+}
